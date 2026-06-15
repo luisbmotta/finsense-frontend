@@ -1,0 +1,113 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$finsense-primary: mat.define-palette(mat.$blue-palette, 800, 400, 900);
+$finsense-accent: mat.define-palette(mat.$teal-palette, 600, 300, 800);
+$finsense-warn: mat.define-palette(mat.$red-palette, 600);
+
+$finsense-theme: mat.define-light-theme((
+  color: (
+    primary: $finsense-primary,
+    accent: $finsense-accent,
+    warn: $finsense-warn,
+  ),
+  typography: mat.define-typography-config(
+    $font-family: 'Roboto, sans-serif',
+  ),
+  density: 0,
+));
+
+@include mat.all-component-themes($finsense-theme);
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: #F0F4F8;
+  color: #1A1A2E;
+}
+
+:root {
+  --primary: #1565C0;
+  --primary-dark: #0D47A1;
+  --primary-light: #42A5F5;
+  --accent: #00897B;
+  --accent-light: #4DB6AC;
+  --success: #4CAF50;
+  --warning: #FF9800;
+  --danger: #F44336;
+  --bg: #F0F4F8;
+  --surface: #FFFFFF;
+  --surface-2: #F7FAFC;
+  --text: #1A1A2E;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --border: #E5E7EB;
+  --shadow: 0 2px 8px rgba(0,0,0,0.10);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-xs: 6px;
+
+  /* Category colors */
+  --cat-alimentacao: #42A5F5;
+  --cat-transporte: #26C6DA;
+  --cat-lazer: #AB47BC;
+  --cat-saude: #66BB6A;
+  --cat-outros: #FFA726;
+}
+
+/* Gradient helpers */
+.gradient-blue {
+  background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+}
+
+.gradient-teal {
+  background: linear-gradient(135deg, #00897B 0%, #004D40 100%);
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, #1565C0 0%, #00897B 100%);
+}
+
+/* Card base */
+.fs-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+/* Amount colors */
+.text-expense { color: var(--danger); }
+.text-income  { color: var(--success); }
+
+/* Utility */
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+.mt-8   { margin-top: 8px; }
+.mt-16  { margin-top: 16px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 2px; }
+
+/* Material overrides */
+.mat-mdc-form-field {
+  width: 100%;
+}
+
+.mdc-text-field--filled {
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0 !important;
+}
