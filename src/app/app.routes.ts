@@ -40,6 +40,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/insights/insights.component').then(m => m.InsightsComponent),
       },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./pages/profile/profile.component').then(m => m.ProfileComponent),
+      },
     ],
   },
   { path: '**', redirectTo: 'auth' },

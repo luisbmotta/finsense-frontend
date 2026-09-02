@@ -39,6 +39,18 @@ export class AuthService {
     localStorage.removeItem(STORAGE_KEY);
   }
 
+  updateMonthlyIncome(monthlyIncome: number): Observable<User> {
+    return this.http.put<User>(`${API_BASE_URL}/users/me`, { monthlyIncome }).pipe(
+      tap(user => {
+        this._user.set(user);
+        const token = this._token();
+        if (token) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, user } as AuthResponse));
+        }
+      })
+    );
+  }
+
   private persistSession(auth: AuthResponse): void {
     this._token.set(auth.token);
     this._user.set(auth.user);

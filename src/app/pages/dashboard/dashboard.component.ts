@@ -24,7 +24,7 @@ import { CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../../models';
           <p class="greeting">Olá, {{ firstName() }} 👋</p>
           <p class="month-label">{{ today | date: 'MMMM yyyy' : '' : 'pt-BR' }}</p>
         </div>
-        <div class="avatar" matRipple (click)="goTo('/app/insights')">
+        <div class="avatar" matRipple (click)="goTo('/app/profile')">
           <mat-icon>person</mat-icon>
         </div>
       </header>
