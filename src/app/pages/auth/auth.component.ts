@@ -1,11 +1,13 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-auth',
@@ -111,6 +113,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
               <div class="forgot-link">
                 <a href="#">Esqueceu a senha?</a>
               </div>
+            }
+
+            @if (errorMessage(); as msg) {
+              <p class="error-banner">{{ msg }}</p>
             }
 
             <button
@@ -277,6 +283,16 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
       text-decoration: none;
     }
 
+    .error-banner {
+      background: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      color: #B91C1C;
+      font-size: 12px;
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin: 4px 0 0;
+    }
+
     .submit-btn {
       margin-top: 8px;
       height: 48px;
@@ -305,9 +321,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
   `],
 })
 export class AuthComponent {
+  private auth = inject(AuthService);
+
   isLogin = signal(true);
   hidePassword = signal(true);
   loading = signal(false);
+  errorMessage = signal<string | null>(null);
   form: FormGroup;
 
   constructor(private fb: FormBuilder, private router: Router) {
@@ -320,6 +339,7 @@ export class AuthComponent {
 
   setMode(login: boolean): void {
     this.isLogin.set(login);
+    this.errorMessage.set(null);
     const nameCtrl = this.form.get('name');
     if (login) {
       nameCtrl?.clearValidators();
@@ -334,10 +354,31 @@ export class AuthComponent {
       this.form.markAllAsTouched();
       return;
     }
+
+    this.errorMessage.set(null);
     this.loading.set(true);
-    setTimeout(() => {
-      this.loading.set(false);
-      this.router.navigate(['/app/dashboard']);
-    }, 1200);
+
+    const { name, email, password } = this.form.value;
+    const request$ = this.isLogin()
+      ? this.auth.login(email, password)
+      : this.auth.register(name, email, password);
+
+    request$.subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.router.navigate(['/app/dashboard']);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.errorMessage.set(this.resolveError(err));
+      },
+    });
+  }
+
+  private resolveError(err: HttpErrorResponse): string {
+    if (err.status === 401) return 'E-mail ou senha inválidos.';
+    if (err.status === 409) return 'Já existe uma conta cadastrada com este e-mail.';
+    if (err.status === 0) return 'Não foi possível conectar ao servidor. Verifique se o backend está rodando.';
+    return err.error?.message ?? 'Algo deu errado. Tente novamente.';
   }
 }

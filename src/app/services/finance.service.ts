@@ -1,39 +1,95 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, forkJoin, map, tap } from 'rxjs';
 import {
   Transaction, Goal, Insight, Category,
   CATEGORY_LABELS, CATEGORY_COLORS,
 } from '../models';
+import { API_BASE_URL } from '../core/api-config';
+import { parseISODate, toISODateString } from '../core/date-utils';
+import { AuthService } from './auth.service';
+
+interface TransactionDto {
+  id: string;
+  description: string;
+  amount: number;
+  category: Category;
+  date: string;
+}
+
+interface GoalDto {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  emoji: string;
+  deadline: string;
+  color: string;
+}
+
+interface SummaryDto {
+  monthlyIncome: number;
+  totalExpenses: number;
+  balance: number;
+  expensesByCategory: Record<string, number>;
+}
+
+export interface NewTransaction {
+  description: string;
+  amount: number;
+  category: Category;
+  date: Date;
+}
+
+export interface NewGoal {
+  name: string;
+  targetAmount: number;
+  emoji: string;
+  deadline: Date;
+  color: string;
+}
+
+const EMPTY_SUMMARY: SummaryDto = {
+  monthlyIncome: 0,
+  totalExpenses: 0,
+  balance: 0,
+  expensesByCategory: {},
+};
+
+function mapTransaction(dto: TransactionDto): Transaction {
+  return { ...dto, date: parseISODate(dto.date) };
+}
+
+function mapGoal(dto: GoalDto): Goal {
+  return { ...dto, deadline: parseISODate(dto.deadline) };
+}
 
 @Injectable({ providedIn: 'root' })
 export class FinanceService {
-  private _transactions = signal<Transaction[]>(this.buildMockTransactions());
-  private _goals = signal<Goal[]>(this.buildMockGoals());
+  private http = inject(HttpClient);
+  private auth = inject(AuthService);
+
+  private _transactions = signal<Transaction[]>([]);
+  private _goals = signal<Goal[]>([]);
+  private _summary = signal<SummaryDto>(EMPTY_SUMMARY);
 
   readonly transactions = this._transactions.asReadonly();
   readonly goals = this._goals.asReadonly();
 
-  readonly totalExpenses = computed(() =>
-    this._transactions().reduce((s, t) => s + t.amount, 0)
-  );
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
 
-  readonly monthlyIncome = 3500;
-
-  readonly balance = computed(() => this.monthlyIncome - this.totalExpenses());
-
-  readonly expensesByCategory = computed(() => {
-    const map: Record<string, number> = {};
-    for (const t of this._transactions()) {
-      map[t.category] = (map[t.category] ?? 0) + t.amount;
-    }
-    return map;
-  });
+  readonly totalExpenses = computed(() => this._summary().totalExpenses);
+  readonly monthlyIncome = computed(() => this._summary().monthlyIncome);
+  readonly balance = computed(() => this._summary().balance);
+  readonly expensesByCategory = computed(() => this._summary().expensesByCategory);
 
   readonly chartSegments = computed(() => {
     const total = this.totalExpenses();
     const byCategory = this.expensesByCategory();
     let cumulative = 0;
     return (Object.keys(byCategory) as Category[]).map(cat => {
-      const pct = (byCategory[cat] / total) * 100;
+      const pct = total > 0 ? (byCategory[cat] / total) * 100 : 0;
       const start = cumulative;
       cumulative += pct;
       return {
@@ -48,11 +104,71 @@ export class FinanceService {
     });
   });
 
-  addTransaction(tx: Omit<Transaction, 'id'>): void {
-    this._transactions.update(list => [
-      { ...tx, id: Date.now().toString() },
-      ...list,
-    ]);
+  constructor() {
+    effect(() => {
+      if (this.auth.isAuthenticated()) {
+        this.refreshAll();
+      } else {
+        this._transactions.set([]);
+        this._goals.set([]);
+        this._summary.set(EMPTY_SUMMARY);
+        this.error.set(null);
+      }
+    }, { allowSignalWrites: true });
+  }
+
+  refreshAll(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    forkJoin({
+      transactions: this.http.get<TransactionDto[]>(`${API_BASE_URL}/transactions`),
+      goals: this.http.get<GoalDto[]>(`${API_BASE_URL}/goals`),
+      summary: this.http.get<SummaryDto>(`${API_BASE_URL}/summary`),
+    }).subscribe({
+      next: ({ transactions, goals, summary }) => {
+        this._transactions.set(transactions.map(mapTransaction));
+        this._goals.set(goals.map(mapGoal));
+        this._summary.set(summary);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('Não foi possível carregar seus dados. Tente novamente em instantes.');
+        this.loading.set(false);
+      },
+    });
+  }
+
+  addTransaction(payload: NewTransaction): Observable<Transaction> {
+    const body = { ...payload, date: toISODateString(payload.date) };
+    return this.http.post<TransactionDto>(`${API_BASE_URL}/transactions`, body).pipe(
+      map(mapTransaction),
+      tap(tx => {
+        this._transactions.update(list => [tx, ...list]);
+        this.refreshSummary();
+      })
+    );
+  }
+
+  createGoal(payload: NewGoal): Observable<Goal> {
+    const body = { ...payload, deadline: toISODateString(payload.deadline) };
+    return this.http.post<GoalDto>(`${API_BASE_URL}/goals`, body).pipe(
+      map(mapGoal),
+      tap(goal => this._goals.update(list => [goal, ...list]))
+    );
+  }
+
+  deposit(goalId: string, amount: number): Observable<Goal> {
+    return this.http.post<GoalDto>(`${API_BASE_URL}/goals/${goalId}/deposit`, { amount }).pipe(
+      map(mapGoal),
+      tap(updated => this._goals.update(list => list.map(g => (g.id === updated.id ? updated : g))))
+    );
+  }
+
+  private refreshSummary(): void {
+    this.http
+      .get<SummaryDto>(`${API_BASE_URL}/summary`)
+      .subscribe(summary => this._summary.set(summary));
   }
 
   getInsights(): Insight[] {
@@ -104,68 +220,6 @@ export class FinanceService {
           'Você paga R$ 19,90 no Spotify individual. Um plano família divide o custo e pode sair por R$ 5,00 para você.',
         type: 'tip',
         icon: 'music_note',
-      },
-    ];
-  }
-
-  private buildMockTransactions(): Transaction[] {
-    const d = (day: number) => new Date(2026, 5, day);
-    return [
-      { id: '1',  description: 'Supermercado Pão de Açúcar', amount: 287.50, category: 'alimentacao', date: d(12) },
-      { id: '2',  description: 'Uber',                        amount: 32.50,  category: 'transporte',  date: d(13) },
-      { id: '3',  description: 'Farmácia Droga Raia',         amount: 89.30,  category: 'saude',       date: d(11) },
-      { id: '4',  description: 'iFood — Burger King',         amount: 45.90,  category: 'alimentacao', date: d(11) },
-      { id: '5',  description: 'Conta de Luz (Enel)',         amount: 145.70, category: 'outros',      date: d(10) },
-      { id: '6',  description: "McDonald's",                  amount: 28.70,  category: 'alimentacao', date: d(10) },
-      { id: '7',  description: 'Abastecimento Shell',         amount: 180.00, category: 'transporte',  date: d(9)  },
-      { id: '8',  description: 'Padaria Central',             amount: 18.40,  category: 'alimentacao', date: d(8)  },
-      { id: '9',  description: 'Metrô (recarga)',             amount: 28.00,  category: 'transporte',  date: d(7)  },
-      { id: '10', description: 'Internet Claro Fibra',        amount: 129.90, category: 'outros',      date: d(5)  },
-      { id: '11', description: 'Netflix',                     amount: 44.90,  category: 'lazer',       date: d(5)  },
-      { id: '12', description: 'Rappi — Sushi',               amount: 52.30,  category: 'alimentacao', date: d(6)  },
-      { id: '13', description: 'Cinema Kinoplex',             amount: 52.00,  category: 'lazer',       date: d(3)  },
-      { id: '14', description: 'Academia Smart Fit',          amount: 99.90,  category: 'saude',       date: d(1)  },
-      { id: '15', description: 'Spotify Premium',             amount: 19.90,  category: 'lazer',       date: d(1)  },
-    ];
-  }
-
-  private buildMockGoals(): Goal[] {
-    return [
-      {
-        id: '1',
-        name: 'Viagem para Europa',
-        targetAmount: 15000,
-        currentAmount: 4200,
-        emoji: '✈️',
-        deadline: new Date(2027, 11, 15),
-        color: '#1565C0',
-      },
-      {
-        id: '2',
-        name: 'Fundo de Emergência',
-        targetAmount: 10000,
-        currentAmount: 7500,
-        emoji: '🛡️',
-        deadline: new Date(2026, 9, 1),
-        color: '#00897B',
-      },
-      {
-        id: '3',
-        name: 'Notebook Novo',
-        targetAmount: 5000,
-        currentAmount: 1850,
-        emoji: '💻',
-        deadline: new Date(2026, 11, 1),
-        color: '#7B1FA2',
-      },
-      {
-        id: '4',
-        name: 'Curso de Inglês',
-        targetAmount: 2000,
-        currentAmount: 800,
-        emoji: '📚',
-        deadline: new Date(2026, 7, 1),
-        color: '#E65100',
       },
     ];
   }

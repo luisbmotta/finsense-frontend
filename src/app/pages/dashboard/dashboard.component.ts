@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatRippleModule } from '@angular/material/core';
 import { FinanceService } from '../../services/finance.service';
+import { AuthService } from '../../services/auth.service';
 import { CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../../models';
 
 @Component({
@@ -20,13 +21,17 @@ import { CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../../models';
       <!-- Header -->
       <header class="dash-header">
         <div class="header-left">
-          <p class="greeting">Olá, Luis 👋</p>
+          <p class="greeting">Olá, {{ firstName() }} 👋</p>
           <p class="month-label">{{ today | date: 'MMMM yyyy' : '' : 'pt-BR' }}</p>
         </div>
         <div class="avatar" matRipple (click)="goTo('/app/insights')">
           <mat-icon>person</mat-icon>
         </div>
       </header>
+
+      @if (finance.error(); as err) {
+        <div class="error-banner">{{ err }}</div>
+      }
 
       <!-- Balance card -->
       <div class="balance-card">
@@ -44,7 +49,7 @@ import { CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../../models';
             <mat-icon class="meta-icon income">arrow_downward</mat-icon>
             <div>
               <span class="meta-label">Receita</span>
-              <span class="meta-value">{{ finance.monthlyIncome | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+              <span class="meta-value">{{ finance.monthlyIncome() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
             </div>
           </div>
           <div class="meta-divider"></div>
@@ -118,6 +123,11 @@ import { CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../../models';
         </div>
 
         <div class="tx-list">
+          @if (finance.loading() && recentTransactions().length === 0) {
+            <p class="tx-empty">Carregando transações...</p>
+          } @else if (recentTransactions().length === 0) {
+            <p class="tx-empty">Nenhuma transação ainda.</p>
+          }
           @for (tx of recentTransactions(); track tx.id) {
             <div class="tx-item">
               <div class="tx-icon" [style.background]="getCatColor(tx.category) + '20'">
@@ -173,6 +183,23 @@ import { CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../../models';
       cursor: pointer;
     }
     .avatar mat-icon { color: #fff; }
+
+    .error-banner {
+      background: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      color: #B91C1C;
+      font-size: 12px;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+    .tx-empty {
+      text-align: center;
+      color: #9CA3AF;
+      font-size: 13px;
+      padding: 16px 0;
+      margin: 0;
+    }
 
     /* Balance card */
     .balance-card {
@@ -388,10 +415,16 @@ import { CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../../models';
 })
 export class DashboardComponent {
   finance = inject(FinanceService);
+  private auth = inject(AuthService);
   private router = inject(Router);
 
   today = new Date();
   showBalance = signal(true);
+
+  firstName = computed(() => {
+    const name = this.auth.currentUser()?.name;
+    return name ? name.split(' ')[0] : 'Visitante';
+  });
 
   toggleBalance(): void {
     this.showBalance.update(v => !v);

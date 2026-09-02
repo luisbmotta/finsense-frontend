@@ -1,5 +1,17 @@
 export type Category = 'alimentacao' | 'transporte' | 'lazer' | 'saude' | 'outros';
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  monthlyIncome: number;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
 export interface Transaction {
   id: string;
   description: string;

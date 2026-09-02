@@ -4,15 +4,18 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { FinanceService } from '../../services/finance.service';
 import { Goal } from '../../models';
+import { CreateGoalDialogComponent } from './create-goal-dialog.component';
+import { DepositDialogComponent } from './deposit-dialog.component';
 
 @Component({
   selector: 'app-goals',
   standalone: true,
   imports: [
     CurrencyPipe, PercentPipe, DatePipe,
-    MatIconModule, MatButtonModule, MatProgressBarModule, MatSnackBarModule,
+    MatIconModule, MatButtonModule, MatProgressBarModule, MatSnackBarModule, MatDialogModule,
   ],
   template: `
     <div class="page">
@@ -46,8 +49,17 @@ import { Goal } from '../../models';
         </div>
       </div>
 
+      @if (finance.error(); as err) {
+        <div class="error-banner">{{ err }}</div>
+      }
+
       <!-- Goal cards -->
       <div class="goals-list">
+        @if (finance.loading() && finance.goals().length === 0) {
+          <p class="goals-empty">Carregando metas...</p>
+        } @else if (finance.goals().length === 0) {
+          <p class="goals-empty">Você ainda não tem metas. Toque em "+" para criar a primeira.</p>
+        }
         @for (goal of finance.goals(); track goal.id) {
           <div class="goal-card">
 
@@ -131,6 +143,22 @@ import { Goal } from '../../models';
       background: linear-gradient(135deg, #1565C0, #00897B) !important;
       color: #fff !important;
       box-shadow: 0 4px 14px rgba(21,101,192,0.35) !important;
+    }
+
+    .error-banner {
+      background: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      color: #B91C1C;
+      font-size: 12px;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+    }
+    .goals-empty {
+      text-align: center;
+      color: #9CA3AF;
+      font-size: 13px;
+      padding: 24px 0;
     }
 
     /* Summary banner */
@@ -286,6 +314,7 @@ import { Goal } from '../../models';
 export class GoalsComponent {
   finance = inject(FinanceService);
   private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
 
   totalSaved = computed(() =>
     this.finance.goals().reduce((s, g) => s + g.currentAmount, 0)
@@ -306,18 +335,55 @@ export class GoalsComponent {
   }
 
   addToGoal(goal: Goal): void {
-    this.snackBar.open(`Depósito na meta "${goal.name}" em breve! 🎯`, '', {
-      duration: 2000,
-      horizontalPosition: 'center',
-      verticalPosition: 'top',
+    const ref = this.dialog.open(DepositDialogComponent, {
+      data: { goalName: goal.name, color: goal.color },
+      width: '320px',
+    });
+
+    ref.afterClosed().subscribe((amount: number | undefined) => {
+      if (amount == null) return;
+
+      this.finance.deposit(goal.id, amount).subscribe({
+        next: () => {
+          this.snackBar.open(`Depósito registrado em "${goal.name}"! 🎯`, '', {
+            duration: 2500,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+          });
+        },
+        error: () => {
+          this.snackBar.open('Não foi possível registrar o depósito. Tente novamente.', '', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+          });
+        },
+      });
     });
   }
 
   openAddGoal(): void {
-    this.snackBar.open('Criar nova meta — em breve! 🚀', '', {
-      duration: 2000,
-      horizontalPosition: 'center',
-      verticalPosition: 'top',
+    const ref = this.dialog.open(CreateGoalDialogComponent, { width: '340px' });
+
+    ref.afterClosed().subscribe(result => {
+      if (!result) return;
+
+      this.finance.createGoal(result).subscribe({
+        next: () => {
+          this.snackBar.open('Meta criada com sucesso! 🚀', '', {
+            duration: 2500,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+          });
+        },
+        error: () => {
+          this.snackBar.open('Não foi possível criar a meta. Tente novamente.', '', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+          });
+        },
+      });
     });
   }
 }

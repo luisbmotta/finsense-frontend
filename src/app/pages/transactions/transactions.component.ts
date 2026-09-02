@@ -65,9 +65,18 @@ import { Category, CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../.
         </div>
       </div>
 
+      @if (finance.error(); as err) {
+        <div class="error-banner">{{ err }}</div>
+      }
+
       <!-- Transaction list -->
       <div class="tx-list">
-        @if (filteredTransactions().length === 0) {
+        @if (finance.loading() && filteredTransactions().length === 0) {
+          <div class="empty-state">
+            <mat-icon>hourglass_top</mat-icon>
+            <p>Carregando transações...</p>
+          </div>
+        } @else if (filteredTransactions().length === 0) {
           <div class="empty-state">
             <mat-icon>receipt_long</mat-icon>
             <p>Nenhuma transação encontrada</p>
@@ -125,6 +134,16 @@ import { Category, CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../.
       padding: 6px 12px;
       border-radius: 20px;
       border: 1px solid #BFDBFE;
+    }
+
+    .error-banner {
+      background: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      color: #B91C1C;
+      font-size: 12px;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
     }
 
     /* Filters */
@@ -250,7 +269,7 @@ import { Category, CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../.
   `],
 })
 export class TransactionsComponent {
-  private finance = inject(FinanceService);
+  finance = inject(FinanceService);
 
   selectedMonth = signal<number | 'all'>('all');
   selectedCategory = signal<Category | 'all'>('all');

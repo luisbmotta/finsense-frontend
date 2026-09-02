@@ -297,23 +297,31 @@ export class AddExpenseComponent {
     this.loading.set(true);
     const { date, description } = this.form.value;
 
-    setTimeout(() => {
-      this.finance.addTransaction({
-        description,
-        amount: this.amountControl.value!,
-        category: this.selectedCategory(),
-        date: new Date(date),
-      });
-
-      this.loading.set(false);
-      this.snackBar.open('Gasto registrado com sucesso! ✅', '', {
-        duration: 2500,
-        panelClass: 'snack-success',
-        horizontalPosition: 'center',
-        verticalPosition: 'top',
-      });
-      this.router.navigate(['/app/transactions']);
-    }, 600);
+    this.finance.addTransaction({
+      description,
+      amount: this.amountControl.value!,
+      category: this.selectedCategory(),
+      date: new Date(date),
+    }).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.snackBar.open('Gasto registrado com sucesso! ✅', '', {
+          duration: 2500,
+          panelClass: 'snack-success',
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+        });
+        this.router.navigate(['/app/transactions']);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.snackBar.open('Não foi possível registrar o gasto. Tente novamente.', '', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+        });
+      },
+    });
   }
 
   goBack(): void {
