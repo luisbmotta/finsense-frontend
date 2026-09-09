@@ -4,8 +4,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { FinanceService } from '../../services/finance.service';
-import { Category, CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../../models';
+import { Category, Transaction, CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../../models';
+import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-transactions',
@@ -13,6 +16,7 @@ import { Category, CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../.
   imports: [
     CurrencyPipe, DatePipe,
     MatIconModule, MatButtonModule, MatChipsModule, MatDividerModule,
+    MatSnackBarModule, MatDialogModule,
   ],
   template: `
     <div class="page">
@@ -101,6 +105,14 @@ import { Category, CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../.
                   - {{ tx.amount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
                 </span>
               </div>
+              <button
+                mat-icon-button
+                class="delete-btn"
+                aria-label="Excluir gasto"
+                (click)="confirmDelete(tx)"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
             </div>
           }
         }
@@ -248,6 +260,15 @@ import { Category, CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../.
       font-weight: 700;
       color: #EF4444;
     }
+    .delete-btn {
+      flex-shrink: 0;
+      color: #9CA3AF;
+      width: 36px;
+      height: 36px;
+      line-height: 36px;
+    }
+    .delete-btn:hover { color: #DC2626; }
+    .delete-btn mat-icon { font-size: 20px; width: 20px; height: 20px; }
 
     /* Empty state */
     .empty-state {
@@ -270,6 +291,8 @@ import { Category, CATEGORY_ICONS, CATEGORY_LABELS, CATEGORY_COLORS } from '../.
 })
 export class TransactionsComponent {
   finance = inject(FinanceService);
+  private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
 
   selectedMonth = signal<number | 'all'>('all');
   selectedCategory = signal<Category | 'all'>('all');
@@ -311,5 +334,36 @@ export class TransactionsComponent {
   }
   getCatLabel(cat: string): string {
     return (CATEGORY_LABELS as Record<string, string>)[cat] ?? cat;
+  }
+
+  confirmDelete(tx: Transaction): void {
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Excluir gasto?',
+        message: `Tem certeza que quer excluir "${tx.description}"? Essa ação não pode ser desfeita.`,
+      },
+      width: '320px',
+    });
+
+    ref.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+
+      this.finance.deleteTransaction(tx.id).subscribe({
+        next: () => {
+          this.snackBar.open('Gasto excluído.', '', {
+            duration: 2500,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+          });
+        },
+        error: () => {
+          this.snackBar.open('Não foi possível excluir o gasto. Tente novamente.', '', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+          });
+        },
+      });
+    });
   }
 }

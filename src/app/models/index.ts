@@ -30,14 +30,6 @@ export interface Goal {
   color: string;
 }
 
-export interface Insight {
-  id: string;
-  title: string;
-  description: string;
-  type: 'tip' | 'warning' | 'success' | 'info';
-  icon: string;
-}
-
 export const CATEGORY_LABELS: Record<Category, string> = {
   alimentacao: 'Alimentação',
   transporte: 'Transporte',

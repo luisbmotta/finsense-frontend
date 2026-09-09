@@ -2,7 +2,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, tap } from 'rxjs';
 import {
-  Transaction, Goal, Insight, Category,
+  Transaction, Goal, Category,
   CATEGORY_LABELS, CATEGORY_COLORS,
 } from '../models';
 import { API_BASE_URL } from '../core/api-config';
@@ -49,6 +49,16 @@ export interface NewGoal {
   color: string;
 }
 
+export interface ParsedTransaction {
+  amount: number;
+  category: Category;
+  description: string;
+}
+
+interface InsightsResponseDto {
+  insights: string[];
+}
+
 const EMPTY_SUMMARY: SummaryDto = {
   monthlyIncome: 0,
   totalExpenses: 0,
@@ -78,6 +88,11 @@ export class FinanceService {
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+
+  private _aiInsights = signal<string[]>([]);
+  readonly aiInsights = this._aiInsights.asReadonly();
+  readonly insightsLoading = signal(false);
+  readonly insightsError = signal<string | null>(null);
 
   readonly totalExpenses = computed(() => this._summary().totalExpenses);
   readonly monthlyIncome = computed(() => this._summary().monthlyIncome);
@@ -150,6 +165,19 @@ export class FinanceService {
     );
   }
 
+  parseTransaction(text: string): Observable<ParsedTransaction> {
+    return this.http.post<ParsedTransaction>(`${API_BASE_URL}/transactions/parse`, { text });
+  }
+
+  deleteTransaction(id: string): Observable<void> {
+    return this.http.delete<void>(`${API_BASE_URL}/transactions/${id}`).pipe(
+      tap(() => {
+        this._transactions.update(list => list.filter(tx => tx.id !== id));
+        this.refreshSummary();
+      })
+    );
+  }
+
   createGoal(payload: NewGoal): Observable<Goal> {
     const body = { ...payload, deadline: toISODateString(payload.deadline) };
     return this.http.post<GoalDto>(`${API_BASE_URL}/goals`, body).pipe(
@@ -161,7 +189,19 @@ export class FinanceService {
   deposit(goalId: string, amount: number): Observable<Goal> {
     return this.http.post<GoalDto>(`${API_BASE_URL}/goals/${goalId}/deposit`, { amount }).pipe(
       map(mapGoal),
-      tap(updated => this._goals.update(list => list.map(g => (g.id === updated.id ? updated : g))))
+      tap(updated => {
+        this._goals.update(list => list.map(g => (g.id === updated.id ? updated : g)));
+        // O depósito cria uma transação vinculada à meta no backend, então o
+        // extrato e o saldo precisam ser recarregados junto com a meta.
+        this.refreshTransactions();
+        this.refreshSummary();
+      })
+    );
+  }
+
+  deleteGoal(id: string): Observable<void> {
+    return this.http.delete<void>(`${API_BASE_URL}/goals/${id}`).pipe(
+      tap(() => this._goals.update(list => list.filter(g => g.id !== id)))
     );
   }
 
@@ -171,56 +211,25 @@ export class FinanceService {
       .subscribe(summary => this._summary.set(summary));
   }
 
-  getInsights(): Insight[] {
-    return [
-      {
-        id: '1',
-        title: 'Alimentação acima da média',
-        description:
-          'Você gastou R$ 432,80 em alimentação este mês — 15% acima da sua média dos últimos 3 meses. Cozinhar 3x por semana pode economizar cerca de R$ 180.',
-        type: 'warning',
-        icon: 'restaurant',
+  private refreshTransactions(): void {
+    this.http
+      .get<TransactionDto[]>(`${API_BASE_URL}/transactions`)
+      .subscribe(transactions => this._transactions.set(transactions.map(mapTransaction)));
+  }
+
+  refreshInsights(): void {
+    this.insightsLoading.set(true);
+    this.insightsError.set(null);
+
+    this.http.get<InsightsResponseDto>(`${API_BASE_URL}/insights`).subscribe({
+      next: res => {
+        this._aiInsights.set(res.insights);
+        this.insightsLoading.set(false);
       },
-      {
-        id: '2',
-        title: 'Viagem Europa: 18 meses para a meta',
-        description:
-          'Economizando R$ 600/mês, você atinge sua meta de R$ 15.000 em 18 meses. Que tal cortar assinaturas não usadas?',
-        type: 'tip',
-        icon: 'flight_takeoff',
+      error: () => {
+        this.insightsError.set('Não foi possível gerar seus insights agora. Tente novamente em instantes.');
+        this.insightsLoading.set(false);
       },
-      {
-        id: '3',
-        title: 'Lazer reduzido em 8%',
-        description:
-          'Parabéns! Seus gastos com lazer caíram 8% comparado ao mês passado. Continue assim para acelerar suas metas.',
-        type: 'success',
-        icon: 'celebration',
-      },
-      {
-        id: '4',
-        title: 'Fundo de emergência quase completo',
-        description:
-          'Seu fundo de emergência está 75% completo. Apenas R$ 2.500 para atingir a meta de segurança de 3 meses de despesas.',
-        type: 'info',
-        icon: 'shield',
-      },
-      {
-        id: '5',
-        title: 'Gastos com Uber aumentaram 30%',
-        description:
-          'Você gastou R$ 32,50 em Uber este mês. Considere usar mais transporte público — pode economizar R$ 120/mês.',
-        type: 'warning',
-        icon: 'directions_car',
-      },
-      {
-        id: '6',
-        title: 'Plano familiar Spotify economiza R$ 15/mês',
-        description:
-          'Você paga R$ 19,90 no Spotify individual. Um plano família divide o custo e pode sair por R$ 5,00 para você.',
-        type: 'tip',
-        icon: 'music_note',
-      },
-    ];
+    });
   }
 }

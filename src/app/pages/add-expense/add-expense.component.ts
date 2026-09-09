@@ -60,6 +60,40 @@ import { Category, CATEGORY_LABELS, CATEGORY_ICONS, CATEGORY_COLORS } from '../.
       <!-- Form card -->
       <form [formGroup]="form" (ngSubmit)="submit()" class="form-card">
 
+        <!-- AI free-text entry -->
+        <div class="ai-parse-card">
+          <p class="section-label ai-label">
+            <mat-icon class="ai-label-icon">auto_awesome</mat-icon>
+            Lançamento por texto livre
+          </p>
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Descreva o gasto</mat-label>
+            <textarea
+              matInput
+              rows="2"
+              [formControl]="freeTextControl"
+              placeholder="Ex: gastei 45 reais no almoço hoje"
+              maxlength="200"
+            ></textarea>
+          </mat-form-field>
+          <button
+            mat-stroked-button
+            type="button"
+            class="ai-parse-btn"
+            [disabled]="parsing() || !freeTextControl.value.trim()"
+            (click)="interpretWithAI()"
+          >
+            <mat-icon [class.spin]="parsing()">{{ parsing() ? 'autorenew' : 'auto_awesome' }}</mat-icon>
+            {{ parsing() ? 'Interpretando...' : 'Interpretar com IA' }}
+          </button>
+          @if (aiHint()) {
+            <p class="ai-hint">
+              <mat-icon>check_circle</mat-icon>
+              Preenchido pela IA — revise os campos abaixo antes de confirmar.
+            </p>
+          }
+        </div>
+
         <!-- Category selector -->
         <p class="section-label">Categoria</p>
         <div class="category-grid">
@@ -198,6 +232,48 @@ import { Category, CATEGORY_LABELS, CATEGORY_ICONS, CATEGORY_COLORS } from '../.
       margin: 0 0 12px;
     }
 
+    /* AI free-text entry */
+    .ai-parse-card {
+      background: #F0F7FF;
+      border: 1px solid #DBEAFE;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .ai-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 10px;
+    }
+    .ai-label-icon { font-size: 16px; width: 16px; height: 16px; color: #1565C0; }
+    .ai-parse-btn {
+      width: 100%;
+      height: 42px;
+      border-radius: 12px !important;
+      color: #1565C0 !important;
+      border-color: #90CAF9 !important;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .ai-hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #00897B;
+      margin: 10px 0 0;
+    }
+    .ai-hint mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     /* Category grid */
     .category-grid {
       display: grid;
@@ -265,6 +341,8 @@ export class AddExpenseComponent {
   private finance = inject(FinanceService);
 
   loading = signal(false);
+  parsing = signal(false);
+  aiHint = signal(false);
   selectedCategory = signal<Category>('alimentacao');
 
   amountControl = this.fb.control<number | null>(null, [
@@ -277,6 +355,8 @@ export class AddExpenseComponent {
     description: ['', Validators.required],
   });
 
+  freeTextControl = this.fb.control('', { nonNullable: true });
+
   categories = (Object.keys(CATEGORY_LABELS) as Category[]).map(cat => ({
     value: cat,
     label: CATEGORY_LABELS[cat],
@@ -286,6 +366,32 @@ export class AddExpenseComponent {
 
   selectCategory(cat: Category): void {
     this.selectedCategory.set(cat);
+  }
+
+  interpretWithAI(): void {
+    const text = this.freeTextControl.value.trim();
+    if (!text || this.parsing()) return;
+
+    this.parsing.set(true);
+    this.aiHint.set(false);
+
+    this.finance.parseTransaction(text).subscribe({
+      next: result => {
+        this.parsing.set(false);
+        this.amountControl.setValue(result.amount);
+        this.selectedCategory.set(result.category);
+        this.form.patchValue({ description: result.description });
+        this.aiHint.set(true);
+      },
+      error: () => {
+        this.parsing.set(false);
+        this.snackBar.open('Não foi possível interpretar o texto. Tente novamente ou preencha manualmente.', '', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+        });
+      },
+    });
   }
 
   submit(): void {

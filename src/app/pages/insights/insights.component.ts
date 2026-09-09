@@ -1,20 +1,9 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CurrencyPipe, PercentPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { FinanceService } from '../../services/finance.service';
-import { Insight } from '../../models';
-
-interface InsightStyle {
-  bg: string;
-  border: string;
-  iconBg: string;
-  iconColor: string;
-  badgeBg: string;
-  badgeText: string;
-  badgeLabel: string;
-}
 
 @Component({
   selector: 'app-insights',
@@ -71,31 +60,40 @@ interface InsightStyle {
       </div>
 
       <!-- Insight cards -->
-      <p class="section-title" style="padding: 0 16px; margin-bottom: 8px;">
-        Dicas e alertas ({{ insights.length }})
-      </p>
+      @if (finance.insightsLoading()) {
+        <div class="insights-status">
+          <mat-icon class="spin">autorenew</mat-icon>
+          <p>Gerando insights com IA...</p>
+        </div>
+      } @else if (finance.insightsError()) {
+        <div class="insights-status insights-status-error">
+          <mat-icon>error_outline</mat-icon>
+          <p>{{ finance.insightsError() }}</p>
+          <button mat-stroked-button (click)="finance.refreshInsights()">Tentar novamente</button>
+        </div>
+      } @else if (finance.aiInsights().length === 0) {
+        <div class="insights-status">
+          <mat-icon>auto_awesome</mat-icon>
+          <p>Nenhum insight disponível no momento.</p>
+        </div>
+      } @else {
+        <p class="section-title" style="padding: 0 16px; margin-bottom: 8px;">
+          Dicas e alertas ({{ finance.aiInsights().length }})
+        </p>
 
-      <div class="insights-list">
-        @for (insight of insights; track insight.id) {
-          <div class="insight-card" [style.border-left-color]="getStyle(insight.type).border">
-            <div class="insight-icon-wrap" [style.background]="getStyle(insight.type).iconBg">
-              <mat-icon [style.color]="getStyle(insight.type).iconColor">{{ insight.icon }}</mat-icon>
-            </div>
-            <div class="insight-body">
-              <div class="insight-top-row">
-                <p class="insight-title">{{ insight.title }}</p>
-                <span class="insight-badge"
-                  [style.background]="getStyle(insight.type).badgeBg"
-                  [style.color]="getStyle(insight.type).badgeText"
-                >
-                  {{ getStyle(insight.type).badgeLabel }}
-                </span>
+        <div class="insights-list">
+          @for (tip of finance.aiInsights(); track $index) {
+            <div class="insight-card">
+              <div class="insight-icon-wrap">
+                <mat-icon>auto_awesome</mat-icon>
               </div>
-              <p class="insight-desc">{{ insight.description }}</p>
+              <div class="insight-body">
+                <p class="insight-desc">{{ tip }}</p>
+              </div>
             </div>
-          </div>
-        }
-      </div>
+          }
+        </div>
+      }
 
       <!-- Footer -->
       <div class="ai-footer">
@@ -273,47 +271,47 @@ interface InsightStyle {
       padding: 14px;
       display: flex;
       gap: 12px;
-      border-left: 4px solid;
+      border-left: 4px solid #3B82F6;
       box-shadow: 0 1px 6px rgba(0,0,0,0.07);
     }
     .insight-icon-wrap {
       width: 40px; height: 40px;
       border-radius: 10px;
+      background: #DBEAFE;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
     }
-    .insight-icon-wrap mat-icon { font-size: 20px; }
-    .insight-body { flex: 1; min-width: 0; }
-    .insight-top-row {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-    .insight-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #1A1A2E;
-      margin: 0;
-      flex: 1;
-    }
-    .insight-badge {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 10px;
-      white-space: nowrap;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-    }
+    .insight-icon-wrap mat-icon { font-size: 20px; color: #2563EB; }
+    .insight-body { flex: 1; min-width: 0; display: flex; align-items: center; }
     .insight-desc {
-      font-size: 12px;
-      color: #6B7280;
+      font-size: 13px;
+      color: #374151;
       line-height: 1.5;
       margin: 0;
+    }
+
+    /* Loading / error / empty states */
+    .insights-status {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      text-align: center;
+      padding: 32px 24px;
+      margin: 0 16px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .insights-status mat-icon { font-size: 28px; width: 28px; height: 28px; color: #9CA3AF; }
+    .insights-status p { font-size: 13px; color: #6B7280; margin: 0; }
+    .insights-status-error mat-icon { color: #DC2626; }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     /* Footer */
@@ -334,53 +332,13 @@ interface InsightStyle {
     }
   `],
 })
-export class InsightsComponent {
+export class InsightsComponent implements OnInit {
   finance = inject(FinanceService);
-  insights: Insight[] = this.finance.getInsights();
 
   score = 72;
   scoreDesc = 'Você está no caminho certo! Pequenos ajustes podem melhorar sua saúde financeira.';
 
-  private styleMap: Record<string, InsightStyle> = {
-    warning: {
-      bg: '#FFFBEB',
-      border: '#F59E0B',
-      iconBg: '#FEF3C7',
-      iconColor: '#D97706',
-      badgeBg: '#FEF3C7',
-      badgeText: '#D97706',
-      badgeLabel: 'Atenção',
-    },
-    tip: {
-      bg: '#EFF6FF',
-      border: '#3B82F6',
-      iconBg: '#DBEAFE',
-      iconColor: '#2563EB',
-      badgeBg: '#DBEAFE',
-      badgeText: '#2563EB',
-      badgeLabel: 'Dica',
-    },
-    success: {
-      bg: '#F0FDF4',
-      border: '#22C55E',
-      iconBg: '#DCFCE7',
-      iconColor: '#16A34A',
-      badgeBg: '#DCFCE7',
-      badgeText: '#16A34A',
-      badgeLabel: 'Meta',
-    },
-    info: {
-      bg: '#F0F9FF',
-      border: '#0EA5E9',
-      iconBg: '#E0F2FE',
-      iconColor: '#0284C7',
-      badgeBg: '#E0F2FE',
-      badgeText: '#0284C7',
-      badgeLabel: 'Info',
-    },
-  };
-
-  getStyle(type: string): InsightStyle {
-    return this.styleMap[type] ?? this.styleMap['info'];
+  ngOnInit(): void {
+    this.finance.refreshInsights();
   }
 }

@@ -9,6 +9,7 @@ import { FinanceService } from '../../services/finance.service';
 import { Goal } from '../../models';
 import { CreateGoalDialogComponent } from './create-goal-dialog.component';
 import { DepositDialogComponent } from './deposit-dialog.component';
+import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-goals',
@@ -77,6 +78,14 @@ import { DepositDialogComponent } from './deposit-dialog.component';
               <div class="goal-pct" [style.color]="goal.color">
                 {{ getProgress(goal) | percent:'1.0-0' }}
               </div>
+              <button
+                mat-icon-button
+                class="goal-delete-btn"
+                aria-label="Excluir meta"
+                (click)="confirmDeleteGoal(goal)"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
             </div>
 
             <div class="goal-amounts">
@@ -252,6 +261,16 @@ import { DepositDialogComponent } from './deposit-dialog.component';
       font-weight: 700;
       font-family: 'Nunito', sans-serif;
     }
+    .goal-delete-btn {
+      flex-shrink: 0;
+      color: #9CA3AF;
+      width: 32px;
+      height: 32px;
+      line-height: 32px;
+      margin-left: 2px;
+    }
+    .goal-delete-btn:hover { color: #DC2626; }
+    .goal-delete-btn mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
     .goal-amounts {
       display: flex;
@@ -353,6 +372,37 @@ export class GoalsComponent {
         },
         error: () => {
           this.snackBar.open('Não foi possível registrar o depósito. Tente novamente.', '', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+          });
+        },
+      });
+    });
+  }
+
+  confirmDeleteGoal(goal: Goal): void {
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Excluir meta?',
+        message: `Tem certeza que quer excluir a meta "${goal.name}"? Essa ação não pode ser desfeita.`,
+      },
+      width: '320px',
+    });
+
+    ref.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+
+      this.finance.deleteGoal(goal.id).subscribe({
+        next: () => {
+          this.snackBar.open('Meta excluída.', '', {
+            duration: 2500,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+          });
+        },
+        error: () => {
+          this.snackBar.open('Não foi possível excluir a meta. Tente novamente.', '', {
             duration: 3000,
             horizontalPosition: 'center',
             verticalPosition: 'top',
