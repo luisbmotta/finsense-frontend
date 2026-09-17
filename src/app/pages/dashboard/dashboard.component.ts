@@ -440,7 +440,7 @@ export class DashboardComponent {
   ];
 
   totalLabel = computed(() => {
-    const t = this.finance.totalExpenses();
+    const t = this.finance.chartTotal();
     return 'R$ ' + Math.round(t).toLocaleString('pt-BR');
   });
 

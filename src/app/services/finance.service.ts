@@ -99,8 +99,12 @@ export class FinanceService {
   readonly balance = computed(() => this._summary().balance);
   readonly expensesByCategory = computed(() => this._summary().expensesByCategory);
 
+  readonly chartTotal = computed(() =>
+    Object.values(this.expensesByCategory()).reduce((sum, v) => sum + v, 0)
+  );
+
   readonly chartSegments = computed(() => {
-    const total = this.totalExpenses();
+    const total = this.chartTotal();
     const byCategory = this.expensesByCategory();
     let cumulative = 0;
     return (Object.keys(byCategory) as Category[]).map(cat => {
