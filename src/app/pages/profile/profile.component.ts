@@ -81,6 +81,16 @@ import { FinanceService } from '../../services/finance.service';
           Salvar alterações
         </button>
 
+        <button
+          mat-stroked-button
+          type="button"
+          class="logout-btn"
+          (click)="logout()"
+        >
+          <mat-icon>logout</mat-icon>
+          Sair
+        </button>
+
       </form>
     </div>
   `,
@@ -168,6 +178,21 @@ import { FinanceService } from '../../services/finance.service';
       gap: 8px;
       margin-top: 16px;
     }
+
+    .logout-btn {
+      width: 100%;
+      height: 48px;
+      border-radius: 14px !important;
+      color: #DC2626 !important;
+      border-color: #FCA5A5 !important;
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
   `],
 })
 export class ProfileComponent {
@@ -217,5 +242,10 @@ export class ProfileComponent {
 
   goBack(): void {
     this.router.navigate(['/app/dashboard']);
+  }
+
+  logout(): void {
+    this.auth.logout();
+    this.router.navigate(['/auth']);
   }
 }
