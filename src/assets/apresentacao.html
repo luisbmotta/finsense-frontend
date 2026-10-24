@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinSense — Apresentação do Projeto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  :root {
+    --bg-deep: #120B24;
+    --bg-surface: #1C1333;
+    --bg-surface-2: #241A42;
+    --accent-violet: #8B6CFF;
+    --accent-gold: #F2B84B;
+    --accent-green: #3FD6A0;
+    --text-primary: #F6F3FF;
+    --text-muted: #C7BFE0;
+    --text-dim: #9C92BE;
+    --text-faint: #776B9E;
+    --border-soft: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg-deep); }
+  body {
+    font-family: 'Manrope', system-ui, sans-serif;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; margin: 0; text-wrap: balance; }
+  a { color: inherit; text-decoration: none; }
+  p { margin: 0; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  @media (min-width: 640px) { .container { padding: 0 48px; } }
+
+  .nav {
+    border-bottom: 1px solid var(--border-soft);
+    padding: 20px 0;
+  }
+  .nav-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, var(--accent-violet), var(--accent-green)); }
+  .logo-text { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
+
+  .btn-primary {
+    background: var(--accent-gold); color: var(--bg-deep); font-weight: 700;
+    padding: 14px 28px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 16px; border: none; cursor: pointer;
+  }
+  .btn-primary.small { padding: 10px 20px; font-size: 14px; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-ghost {
+    border: 1px solid rgba(255,255,255,0.25); color: var(--text-primary); font-weight: 600;
+    padding: 14px 24px; border-radius: 999px; font-size: 16px;
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.06); }
+
+  section { padding: 56px 0; }
+  @media (min-width: 640px) { section { padding: 80px 0; } }
+  .section-alt { background: var(--bg-surface); }
+
+  .kicker {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent-violet);
+  }
+  .badge-pill {
+    display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
+    background: rgba(139,108,255,0.15); border: 1px solid rgba(139,108,255,0.35);
+    color: #C9B8FF; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500;
+    letter-spacing: 0.04em; padding: 6px 14px; border-radius: 999px; text-transform: uppercase;
+  }
+
+  .hero { display: flex; flex-wrap: wrap; gap: 48px; align-items: center; padding-top: 48px; padding-bottom: 48px; }
+  @media (min-width: 640px) { .hero { padding-top: 72px; padding-bottom: 72px; } }
+  .hero-copy { flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+  .hero-copy h1 { font-size: clamp(32px, 5vw, 52px); line-height: 1.08; font-weight: 800; letter-spacing: -0.02em; }
+  .hero-copy > p { font-size: 18px; line-height: 1.6; color: var(--text-muted); max-width: 540px; }
+  .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px; }
+  .hero-stats { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 12px; }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat .num { font-weight: 500; font-size: 18px; color: var(--accent-green); }
+  .stat .label { font-size: 13px; color: var(--text-dim); }
+
+  .hero-card { flex: 1 1 320px; min-width: 280px; max-width: 420px; }
+  .demo-card {
+    background: var(--bg-surface); border: 1px solid var(--border-soft); border-radius: 20px;
+    padding: 24px; display: flex; flex-direction: column; gap: 16px;
+    box-shadow: 0 24px 60px -20px rgba(139,108,255,0.35);
+  }
+  .bubble-user {
+    align-self: flex-end; background: var(--bg-surface-2); border-radius: 14px 14px 4px 14px;
+    padding: 12px 16px; max-width: 85%; font-size: 14px;
+  }
+  .arrow-down { display: flex; justify-content: center; color: #6D5FA0; font-size: 18px; }
+  .bubble-ai {
+    align-self: flex-start; background: rgba(63,214,160,0.12); border: 1px solid rgba(63,214,160,0.3);
+    border-radius: 4px 14px 14px 14px; padding: 14px 16px; max-width: 90%;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .bubble-ai .tag { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--accent-green); letter-spacing: 0.02em; }
+  .bubble-ai .value { font-size: 14px; }
+  .footnote { font-size: 12px; color: var(--text-faint); line-height: 1.5; }
+
+  .two-col { display: flex; flex-wrap: wrap; gap: 24px; }
+  .card {
+    background: var(--bg-surface-2); border: 1px solid var(--border-soft); border-radius: 16px;
+    padding: 28px; display: flex; flex-direction: column; gap: 12px; flex: 1 1 320px; min-width: 0;
+  }
+  .card.good { border-color: rgba(63,214,160,0.25); }
+  .card p { font-size: 16px; line-height: 1.6; color: #D8D2EE; }
+
+  .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; }
+  @media (max-width: 880px) { .feature-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 560px) { .feature-grid { grid-template-columns: 1fr; } }
+  .feature-card {
+    background: var(--bg-surface); border: 1px solid var(--border-soft); border-radius: 16px;
+    padding: 24px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .icon-box { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .feature-card h3 { font-size: 17px; font-weight: 700; }
+  .feature-card p { font-size: 14px; line-height: 1.55; color: #B3A9D4; }
+
+  .steps { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
+  .step {
+    flex: 1 1 220px; min-width: 0; background: var(--bg-surface-2); border-radius: 14px;
+    padding: 22px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .step .n { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 22px; color: var(--accent-violet); }
+  .step h3 { font-size: 15px; font-weight: 700; }
+  .step p { font-size: 13px; line-height: 1.5; color: #B3A9D4; }
+  .step-arrow { align-self: center; color: #6D5FA0; font-size: 20px; padding: 0 2px; }
+
+  .arch-wrap { display: flex; flex-wrap: wrap; gap: 48px; }
+  .arch-intro { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .arch-intro p { font-size: 15px; line-height: 1.6; color: #B3A9D4; max-width: 420px; }
+  .arch-stack { flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; }
+  .layer-row { display: flex; align-items: center; gap: 16px; }
+  .layer-icon {
+    width: 48px; height: 48px; border-radius: 12px; background: var(--bg-surface-2);
+    display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; flex-shrink: 0; font-size: 14px;
+  }
+  .layer-text { display: flex; flex-direction: column; gap: 2px; }
+  .layer-text .t { font-size: 15px; font-weight: 700; }
+  .layer-text .d { font-size: 13px; color: var(--text-dim); }
+  .layer-link { width: 1px; height: 28px; background: rgba(255,255,255,0.12); margin-left: 23px; }
+
+  .team-grid { display: flex; flex-wrap: wrap; gap: 20px; }
+  .team-card {
+    flex: 1 1 260px; min-width: 0; background: var(--bg-surface-2); border-radius: 16px;
+    padding: 24px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .team-card .name { font-size: 17px; font-weight: 700; }
+  .team-card .role { font-size: 14px; color: var(--text-dim); }
+
+  .cta-box {
+    background: linear-gradient(135deg, var(--bg-surface-2), var(--bg-surface));
+    border: 1px solid rgba(139,108,255,0.3); border-radius: 24px; padding: 40px 24px;
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 20px;
+  }
+  @media (min-width: 640px) { .cta-box { padding: 56px; } }
+  .cta-box h2 { font-size: clamp(24px,4vw,34px); font-weight: 800; max-width: 560px; }
+  .cta-box > p { font-size: 16px; color: var(--text-muted); max-width: 480px; line-height: 1.6; }
+  .cta-box .mono { font-size: 13px; color: var(--text-dim); }
+
+  footer { border-top: 1px solid var(--border-soft); padding: 28px 0; text-align: center; }
+  footer span { font-size: 13px; color: var(--text-faint); }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="container nav-row">
+    <div class="logo">
+      <div class="logo-mark"></div>
+      <span class="logo-text">FinSense</span>
+    </div>
+    <a class="btn-primary small" href="https://finsense-frontend-eight.vercel.app" target="_blank" rel="noopener">Acessar o app</a>
+  </div>
+</div>
+
+<section>
+  <div class="container hero">
+    <div class="hero-copy">
+      <span class="badge-pill">TCC · FIAP · Enterprise Challenge Claro</span>
+      <h1>Inteligência financeira que entende o que você escreve.</h1>
+      <p>No FinSense você registra um gasto do jeito que falaria pra um amigo. Uma IA interpreta o texto, categoriza, organiza no painel e aponta pra onde o seu dinheiro está indo — sem formulário, sem planilha.</p>
+      <div class="hero-ctas">
+        <a class="btn-primary" href="https://finsense-frontend-eight.vercel.app" target="_blank" rel="noopener">Acessar o FinSense</a>
+        <a class="btn-ghost" href="#como-funciona">Ver como funciona ↓</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><span class="num mono">100%</span><span class="label">em produção na nuvem</span></div>
+        <div class="stat"><span class="num mono">IA</span><span class="label">categorização em tempo real</span></div>
+        <div class="stat"><span class="num mono">2</span><span class="label">devs, do zero ao ar</span></div>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <div class="demo-card">
+        <span class="kicker">Exemplo real de uso</span>
+        <div class="bubble-user">"almoço com a equipe, 32,90"</div>
+        <div class="arrow-down">↓</div>
+        <div class="bubble-ai">
+          <div class="tag">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3FD6A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/></svg>
+            CATEGORIZADO PELA IA
+          </div>
+          <span class="value">Alimentação · R$ 32,90 · Hoje</span>
+        </div>
+        <span class="footnote">Nenhum campo foi preenchido manualmente — o modelo de linguagem (Groq) interpretou o texto inteiro.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-alt">
+  <div class="container" style="display:flex; flex-direction:column; gap:32px;">
+    <h2 style="font-size: clamp(24px,3vw,32px); font-weight: 700;">Por que mais um app financeiro?</h2>
+    <div class="two-col">
+      <div class="card">
+        <span class="kicker" style="color:#F2919C;">O problema</span>
+        <p>Controlar gastos no celular ainda significa abrir categoria por categoria, lembrar siglas de cartão e preencher o mesmo tipo de formulário todos os dias — até desistir e voltar pra planilha (ou pra nada).</p>
+      </div>
+      <div class="card good">
+        <span class="kicker" style="color:var(--accent-green);">A solução do FinSense</span>
+        <p>Você escreve o gasto em linguagem natural. A IA entende valor, categoria e data, organiza tudo num dashboard e ainda aponta metas e insights — o trabalho pesado fica com o sistema, não com você.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container" style="display:flex; flex-direction:column; gap:32px;">
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <span class="kicker">Funcionalidades</span>
+      <h2 style="font-size: clamp(24px,3vw,32px); font-weight: 700;">Tudo que o app já faz, rodando de verdade</h2>
+    </div>
+    <div class="feature-grid">
+
+      <div class="feature-card">
+        <div class="icon-box" style="background:rgba(139,108,255,0.15);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B6CFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        </div>
+        <h3>Lançamento por IA</h3>
+        <p>Escreva "almoço 32 reais" e a IA (Groq) já categoriza valor e data certos, sem formulário.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="icon-box" style="background:rgba(242,184,75,0.15);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F2B84B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="18" y1="20" x2="18" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
+        </div>
+        <h3>Dashboard em tempo real</h3>
+        <p>Saldo, gastos do mês e evolução num painel só, atualizado a cada novo lançamento.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="icon-box" style="background:rgba(63,214,160,0.15);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3FD6A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+        </div>
+        <h3>Metas financeiras</h3>
+        <p>Defina quanto quer guardar ou gastar por categoria e acompanhe o progresso ao vivo.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="icon-box" style="background:rgba(139,108,255,0.15);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B6CFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+        </div>
+        <h3>Insights automáticos</h3>
+        <p>O sistema aponta padrões — tipo onde você mais gasta — sem precisar pedir relatório.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="icon-box" style="background:rgba(242,184,75,0.15);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F2B84B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </div>
+        <h3>Extrato detalhado</h3>
+        <p>Histórico completo de lançamentos, filtrável por categoria e período.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="icon-box" style="background:rgba(63,214,160,0.15);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3FD6A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><polyline points="9 12 11 14 15 10"/></svg>
+        </div>
+        <h3>Login seguro</h3>
+        <p>Autenticação com JWT e senha criptografada — os dados financeiros ficam protegidos ponta a ponta.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section-alt" id="como-funciona">
+  <div class="container" style="display:flex; flex-direction:column; gap:32px;">
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <span class="kicker">Como funciona</span>
+      <h2 style="font-size: clamp(24px,3vw,32px); font-weight: 700;">Do cadastro ao insight, em 4 passos</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="n">01</span>
+        <h3>Cadastro e login</h3>
+        <p>Conta protegida por autenticação JWT.</p>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <span class="n">02</span>
+        <h3>Lança o gasto em texto livre</h3>
+        <p>Do jeito que você falaria, sem campos fixos.</p>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <span class="n">03</span>
+        <h3>A IA categoriza</h3>
+        <p>Groq interpreta valor, data e categoria automaticamente.</p>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <span class="n">04</span>
+        <h3>Painel e metas atualizam</h3>
+        <p>Dashboard, extrato e insights refletem o lançamento na hora.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container arch-wrap">
+    <div class="arch-intro">
+      <span class="kicker">Arquitetura</span>
+      <h2 style="font-size: clamp(24px,3vw,32px); font-weight: 700;">Stack completa, em produção na nuvem</h2>
+      <p>Frontend e backend publicados em serviços separados, conectados a um banco de dados PostgreSQL gerenciado — a mesma arquitetura usada em produtos reais.</p>
+    </div>
+    <div class="arch-stack">
+
+      <div class="layer-row">
+        <div class="layer-icon" style="border:1px solid rgba(139,108,255,0.3); color:#8B6CFF;">UI</div>
+        <div class="layer-text"><span class="t">Frontend — Angular 17</span><span class="d">Hospedado no Vercel</span></div>
+      </div>
+      <div class="layer-link"></div>
+
+      <div class="layer-row">
+        <div class="layer-icon" style="border:1px solid rgba(242,184,75,0.3); color:#F2B84B;">API</div>
+        <div class="layer-text"><span class="t">Backend — Spring Boot 3 / Java 17</span><span class="d">Hospedado no Render, via Docker</span></div>
+      </div>
+      <div class="layer-link"></div>
+
+      <div class="layer-row">
+        <div class="layer-icon" style="border:1px solid rgba(63,214,160,0.3); color:#3FD6A0;">AI</div>
+        <div class="layer-text"><span class="t">Inteligência artificial — Groq</span><span class="d">Interpreta e categoriza os lançamentos em linguagem natural</span></div>
+      </div>
+      <div class="layer-link"></div>
+
+      <div class="layer-row">
+        <div class="layer-icon" style="border:1px solid rgba(139,108,255,0.3); color:#8B6CFF;">SQL</div>
+        <div class="layer-text"><span class="t">Banco de dados — PostgreSQL</span><span class="d">Supabase Cloud, região São Paulo</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section-alt">
+  <div class="container" style="display:flex; flex-direction:column; gap:32px;">
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <span class="kicker">Quem fez</span>
+      <h2 style="font-size: clamp(24px,3vw,32px); font-weight: 700;">Projeto da dupla, do código ao deploy</h2>
+    </div>
+    <div class="team-grid">
+      <div class="team-card"><span class="name">Luis Fernando Mota</span><span class="role">Desenvolvimento, deploy e infraestrutura</span></div>
+      <div class="team-card"><span class="name">Eduardo</span><span class="role">Desenvolvimento e apresentação do projeto</span></div>
+    </div>
+    <p style="font-size:14px; color:var(--text-faint);">Projeto desenvolvido para o Enterprise Challenge Claro, em parceria com a FIAP.</p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="cta-box">
+      <h2>Quer testar de verdade?</h2>
+      <p>O FinSense está no ar. Acesse pelo link abaixo ou peça pra alguém da equipe mostrar direto no celular.</p>
+      <a class="btn-primary" href="https://finsense-frontend-eight.vercel.app" target="_blank" rel="noopener">Acessar o FinSense</a>
+      <span class="mono">finsense-frontend-eight.vercel.app</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>FinSense · FIAP · Enterprise Challenge Claro · 2026</span>
+</footer>
+
+</body>
+</html>
