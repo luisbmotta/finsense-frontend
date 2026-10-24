@@ -1,6 +1,8 @@
 {
+  "redirects": [
+    { "source": "/", "destination": "/assets/apresentacao.html", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/", "destination": "/assets/apresentacao.html" },
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ]
 }
